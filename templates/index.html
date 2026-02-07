@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotel Room Extractor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .header p { font-size: 1.1em; opacity: 0.9; }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; color: #333; }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #667eea; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        .button:hover { transform: translateY(-2px); }
+        .button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .status.info { background: #e3f2fd; color: #1976d2; border-left: 4px solid #1976d2; }
+        .status.success { background: #e8f5e9; color: #388e3c; border-left: 4px solid #388e3c; }
+        .status.error { background: #ffebee; color: #c62828; border-left: 4px solid #c62828; }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f5f5f5; font-weight: 600; }
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge.high { background: #e8f5e9; color: #388e3c; }
+        .badge.medium { background: #fff3e0; color: #f57c00; }
+        .badge.low { background: #ffebee; color: #c62828; }
+        .download-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .back-btn {
+            background: #f0f0f0;
+            color: #333;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏨 Hotel Room Extractor</h1>
+            <p>Extract room data & images from hotel websites</p>
+        </div>
+
+        <div class="card" id="inputCard">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('single')">Single Hotel</button>
+                <button class="tab" onclick="switchTab('csv')">CSV Upload</button>
+            </div>
+
+            <div id="single-tab" class="tab-content active">
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Hotel ID *</label>
+                        <input type="text" id="hotel_id" placeholder="e.g., 104">
+                    </div>
+                    <div class="form-group">
+                        <label>Hotel Name *</label>
+                        <input type="text" id="hotel_name" placeholder="e.g., Hilton Barcelona">
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>City</label>
+                        <input type="text" id="city" placeholder="e.g., Barcelona">
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" id="address" placeholder="e.g., Av. Diagonal 589">
+                    </div>
+                </div>
+            </div>
+
+            <div id="csv-tab" class="tab-content">
+                <div class="form-group">
+                    <label>CSV Data (hotel_id, hotel_name, city, address)</label>
+                    <textarea id="csv_data" rows="8" placeholder="hotel_id,hotel_name,city,address
+104,Hilton Barcelona,Barcelona,Av Diagonal 589
+105,Hotel Arts,Barcelona,Passeig Marina 19"></textarea>
+                </div>
+            </div>
+
+            <button class="button" id="extractBtn" onclick="startExtraction()">
+                Extract Room Data 🚀
+            </button>
+
+            <div id="status" class="status"></div>
+        </div>
+
+        <div class="card" id="resultsCard" style="display: none;">
+            <button class="back-btn" onclick="resetApp()">← Back to Form</button>
+            <h2>Results (<span id="resultCount">0</span> rooms)</h2>
+            <button class="download-btn" onclick="downloadCSV()" style="float: right; margin-top: -35px;">
+                ⬇️ Download CSV
+            </button>
+            <div style="overflow-x: auto;">
+                <table id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Hotel</th>
+                            <th>Room Name</th>
+                            <th>Area (m²)</th>
+                            <th>Bed Type</th>
+                            <th>Views</th>
+                            <th>Images</th>
+                            <th>Confidence</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTab = 'single';
+        let checkInterval;
+        let latestFilename = '';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(`${tab}-tab`).classList.add('active');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.innerHTML = message;
+            status.style.display = 'block';
+        }
+
+        async function startExtraction() {
+            const btn = document.getElementById('extractBtn');
+            btn.disabled = true;
+            showStatus('<div class="spinner"></div> Starting extraction...', 'info');
+
+            let payload = { mode: currentTab };
+
+            if (currentTab === 'single') {
+                payload.hotel_id = document.getElementById('hotel_id').value;
+                payload.hotel_name = document.getElementById('hotel_name').value;
+                payload.city = document.getElementById('city').value;
+                payload.address = document.getElementById('address').value;
+
+                if (!payload.hotel_id || !payload.hotel_name) {
+                    showStatus('❌ Hotel ID and Name are required', 'error');
+                    btn.disabled = false;
+                    return;
+                }
+            } else {
+                payload.csv_data = document.getElementById('csv_data').value;
+                if (!payload.csv_data) {
+                    showStatus('❌ CSV data is required', 'error');
+                    btn.disabled = false;
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    checkInterval = setInterval(updateStatus, 1000);
+                } else {
+                    const error = await response.json();
+                    showStatus(`❌ ${error.error}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus(`❌ ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        async function updateStatus() {
+            const response = await fetch('/status');
+            const data = await response.json();
+
+            if (data.running) {
+                showStatus(`<div class="spinner"></div> ${data.progress}`, 'info');
+            } else if (data.error) {
+                showStatus(`❌ ${data.error}`, 'error');
+                clearInterval(checkInterval);
+                document.getElementById('extractBtn').disabled = false;
+            } else if (data.results && data.results.length > 0) {
+                showStatus(`✓ ${data.progress}`, 'success');
+                clearInterval(checkInterval);
+                displayResults(data.results);
+                if (data.filepath) {
+                    latestFilename = data.filepath.split('/').pop();
+                }
+            }
+        }
+
+        function displayResults(results) {
+            document.getElementById('inputCard').style.display = 'none';
+            document.getElementById('resultsCard').style.display = 'block';
+            document.getElementById('resultCount').textContent = results.length;
+
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = results.map(r => `
+                <tr>
+                    <td><strong>${r.hotel_name}</strong><br><small>ID: ${r.hotel_id}</small></td>
+                    <td>${r.room_name}</td>
+                    <td>${r.room_area_m2}</td>
+                    <td>${r.bed_type}</td>
+                    <td>${r.views}</td>
+                    <td><small>${r.image_files.split('|').filter(i => !i.includes('NOT')).length}/4</small></td>
+                    <td><span class="badge ${r.confidence.toLowerCase()}">${r.confidence}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function downloadCSV() {
+            if (latestFilename) {
+                window.location.href = `/download/${latestFilename}`;
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('inputCard').style.display = 'block';
+            document.getElementById('resultsCard').style.display = 'none';
+            document.getElementById('extractBtn').disabled = false;
+            document.getElementById('status').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
